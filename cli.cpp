@@ -107,8 +107,10 @@ Dir *execute(Dir *wd, char *rest, bool &exit)
         fetch(rest, size_str);
         char tag_str[MAX_CMD_LEN] = "";
         fetch(rest, tag_str);
+
         unsigned int size = 0;
         Tag tag = OTHER;
+
         if (!str2int(size_str, size))
             cout << "ERROR: Invalid file size \"" << size_str << "\"!" << endl;
         else if (!str2Tag(tag_str, tag))
@@ -147,10 +149,26 @@ Dir *execute(Dir *wd, char *rest, bool &exit)
          * Remember to remove the cout statements here before submission.
          * This block should not print anything to the standard output.
          */
-        
-        char filename[MAX_CMD_LEN] = "";
-        fetch(rest, filename);
-        
+
+        char dirname[MAX_CMD_LEN] = "";
+        fetch(rest, dirname);
+
+        int code = createDir(wd, dirname);
+        switch (code)
+        {
+        case -1:
+            cout << NOT_IMPL << endl;
+            break;
+        case 1:
+            cout << PARAM_NULL << endl;
+            break;
+        case 2:
+            cout << "Error: File name \"" << dirname << "\" is illegal!" << endl;
+            break;
+        case 3:
+            cout << "Error: File \"" << dirname << "\" already exists!" << endl;
+            break;
+        }
         /**
          * End of your code
          */
@@ -166,6 +184,47 @@ Dir *execute(Dir *wd, char *rest, bool &exit)
          * This block should not print anything to the standard output.
          */
 
+        char arg1[MAX_CMD_LEN] = "";
+        fetch(rest, arg1);
+        char arg2[MAX_CMD_LEN] = "";
+        fetch(rest, arg2);
+
+        if (strlen(arg2) == 0)
+        {
+            int code = deleteFile(wd, arg1);
+            switch (code)
+            {
+            case -1:
+                cout << NOT_IMPL << endl;
+                break;
+            case 1:
+                cout << PARAM_NULL << endl;
+                break;
+            case 2:
+                cout << "Error: Cannot find \"" << arg1 << "\" in this directory!" << endl;
+                break;
+            }
+        }
+        else if (arg1[0] != '-' && arg1[1] != 'r')
+        {
+            cout << "Error: Invalid Input!" << endl;
+        }
+        else
+        {
+            int code = deleteDir(wd, arg2, true);
+            switch (code)
+            {
+            case -1:
+                cout << NOT_IMPL << endl;
+                break;
+            case 1:
+                cout << PARAM_NULL << endl;
+                break;
+            case 2:
+                cout << "Error: Cannot find \"" << arg2 << "\" in this directory!" << endl;
+                break;
+            }
+        }
         /**
          * End of your code
          */
@@ -181,6 +240,28 @@ Dir *execute(Dir *wd, char *rest, bool &exit)
          * This block should not print anything to the standard output.
          */
 
+        char tgt[MAX_CMD_LEN] = "";
+        fetch(rest, tgt);
+        char dest[MAX_CMD_LEN] = "";
+        fetch(rest, dest);
+
+        cout << tgt << dest << "\n";
+        // int code = moveDir(tgt, dest);
+        // switch (code)
+        // {
+        // case -1:
+        //     cout << NOT_IMPL << endl;
+        //     break;
+        // case 1:
+        //     cout << PARAM_NULL << endl;
+        //     break;
+        // case 2:
+        //     cout << "Error: File name \"" << dirname << "\" is illegal!" << endl;
+        //     break;
+        // case 3:
+        //     cout << "Error: File \"" << dirname << "\" already exists!" << endl;
+        //     break;
+        // }
         /**
          * End of your code
          */
@@ -195,7 +276,7 @@ Dir *execute(Dir *wd, char *rest, bool &exit)
     {
         char tag_s[MAX_CMD_LEN] = "";
         fetch(rest, tag_s);
-        Tag tag;
+        Tag tag = OTHER;
         if (!str2Tag(tag_s, tag))
             cout << "Error: Invalid tag \"" << tag_s << "\"" << endl;
         else
