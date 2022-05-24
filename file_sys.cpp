@@ -35,7 +35,9 @@ bool isPresent(Dir *dir, const char *name)
         fileIterator = fileIterator->next;
     }
     delete (dirIterator);
+    dirIterator = nullptr;
     delete (fileIterator);
+    fileIterator = nullptr;
 
     return false;
 }
@@ -74,7 +76,9 @@ bool isNameConflict(Dir *dir, const char *name)
         if (strcmp(subdirs->name, name) == 0)
         {
             delete (subdirs);
+            subdirs = nullptr;
             delete (subfiles);
+            subfiles = nullptr;
             return true;
         }
         subdirs = subdirs->next;
@@ -85,14 +89,18 @@ bool isNameConflict(Dir *dir, const char *name)
         if (strcmp(subfiles->name, name) == 0)
         {
             delete (subdirs);
+            subdirs = nullptr;
             delete (subfiles);
+            subfiles = nullptr;
             return true;
         }
         subfiles = subfiles->next;
     }
 
     delete (subdirs);
+    subdirs = nullptr;
     delete (subfiles);
+    subfiles = nullptr;
     return false;
 }
 
@@ -129,6 +137,32 @@ bool isDecendent(Dir *parent, Dir *child)
     }
 
     delete (iterator);
+    iterator = nullptr;
+    return false;
+}
+
+
+bool isPresentFile(Dir *dir, const char *name)
+{
+    File *subFile = dir->subfile;
+    while (subFile != nullptr)
+    {
+        if (strcmp(subFile->name, name) == 0)
+            return true;
+        subFile = subFile->next;
+    }
+    return false;
+}
+
+bool isPresentDir(Dir *dir, const char *name)
+{
+    Dir *subDir = dir->subdir;
+    while (subDir != nullptr)
+    {
+        if (strcmp(subDir->name, name) == 0)
+            return true;
+        subDir = subDir->next;
+    }
     return false;
 }
 
@@ -136,36 +170,7 @@ bool isDecendent(Dir *parent, Dir *child)
 
 //--------------------- START: Helper functions
 
-void fileHelper(const Dir *dir, Tag tag, unsigned int &length, const File ***files)
-{
-    if (isDirectoryEmpty(dir))
-        return;
-    if (!dir->subfile)
-        return;
-
-    // look in current directory
-    const File *dirFiles = dir->subfile;
-    while (dirFiles)
-    {
-        if (dirFiles->tag == tag)
-        {
-            files[length] = &dirFiles;
-            length++;
-        }
-        dirFiles = dirFiles->next;
-    }
-    delete (dirFiles);
-
-    // look recursively in sub directories
-    Dir *dirs = dir->subdir;
-    while (dirs)
-    {
-        fileHelper(dirs, tag, length, files);
-        dirs = dirs->next;
-    }
-    delete (dirs);
-}
-
+// When deleting a directory [Not Recursively]
 void deleteDirHelper(Dir *parent, Dir *child)
 {
     // modify parent pointers of all it's files and directories
@@ -185,8 +190,36 @@ void deleteDirHelper(Dir *parent, Dir *child)
     }
 
     delete (fileIterator);
+    fileIterator = nullptr;
     delete (dirIterator);
+    dirIterator = nullptr;
     delete (child);
+    child = nullptr;
+}
+// When deleting a directory [Recursively]
+void deleteDirHelper2(Dir *dir)
+{
+    if (!dir->next)
+        return;
+    if (isDirectoryEmpty(dir))
+        delete (dir);
+    dir = nullptr;
+
+    File *fileIterator = dir->subfile;
+    while (fileIterator)
+    {
+        deleteFile(dir, fileIterator->name);
+        fileIterator = fileIterator->next;
+    }
+
+    Dir *dirIterator = dir->subdir;
+    while (dirIterator)
+    {
+        deleteDirHelper2(dirIterator);
+        dirIterator = dirIterator->next;
+    }
+    delete (dir);
+    dir = nullptr;
 }
 
 //--------------------- END: Helper functions
@@ -233,86 +266,50 @@ int createDir(Dir *dir, const char *name)
     return 0;
 }
 
+
 int deleteFile(Dir *dir, const char *name)
 {
-    if (!dir || !name)
+    if (dir == nullptr || name == nullptr)
         return 1;
-    if (!isPresent(dir, name))
+    if (isPresentFile(dir, name) == false)
         return 2;
-
-    File *temp;
-
-    if (strcmp(dir->subfile->name, name) == 0)
+    File *prev = nullptr;
+    File *curr = dir->subfile;
+    while (curr != nullptr && strcmp(curr->name, name) != 0)
     {
-        temp = dir->subfile;
+        prev = curr;
+        curr = curr->next;
+    }
+    if (curr == dir->subfile)
         dir->subfile = dir->subfile->next;
-        delete (temp);
-    }
     else
-    {
-        File *current = dir->subfile;
-        while (current->next)
-        {
-            if (strcmp(current->next->name, name) == 0)
-            {
-                temp = current->next;
-                current->next = current->next->next;
-                delete (temp);
-                return 0;
-            }
-            else
-            {
-                current = current->next;
-            }
-        }
-    }
-
+        prev->next = curr->next;
+    delete curr;
+    curr = nullptr;
     return 0;
 }
 
 int deleteDir(Dir *dir, const char *name, bool recursive)
 {
-    if (!dir || !name)
+    if (dir == nullptr || name == nullptr)
         return 1;
-    if (!isPresent(dir, name))
+    if (strcmp(dir->name, name) == 0)
+        return 0;
+    if (isPresentDir(dir, name) == false)
         return 2;
-
-    Dir *toDelete = dir->subdir;
-    while (toDelete)
+    Dir *prev = nullptr;
+    Dir *curr = dir->subdir;
+    while (curr != nullptr && strcmp(curr->name, name) != 0)
     {
-        if (strcmp(toDelete->name, name) == 0)
-        {
-            break;
-        }
+        prev = curr;
+        curr = curr->subdir;
     }
-
-    if (!isDirectoryEmpty(toDelete) && !recursive)
-    {
-        deleteDirHelper(dir, toDelete);
-        return 3;
-    }
-
-    // Delete all it's files
-    File *fileIterator = toDelete->subfile;
-    while (fileIterator)
-    {
-        File *next = fileIterator->next;
-        delete (fileIterator);
-        fileIterator = next;
-    }
-
-    // recurse on it's directories
-    Dir *dirIterator = toDelete->subdir;
-    while (dirIterator)
-    {
-        deleteDir(toDelete, dirIterator->name, recursive);
-        dirIterator = dirIterator->next;
-    }
-
-    delete (fileIterator);
-    delete (dirIterator);
-    delete (toDelete);
-
+    if (curr == dir->subdir)
+        dir->subdir = dir->subdir->subdir;
+    else
+        prev->subdir = curr->subdir;
+    delete curr;
+    curr = nullptr;
     return 0;
 }
 
@@ -340,7 +337,9 @@ unsigned int getSize(const Dir *dir)
     }
 
     delete (fileIterator);
+    fileIterator = nullptr;
     delete (dirIterator);
+    dirIterator = nullptr;
 
     return size;
 }
@@ -357,6 +356,8 @@ int moveFile(File *tgt, Dir *dest)
     tgt->parent = dest;
     tgt->next = dest->subfile;
     dest->subfile = tgt;
+
+    deleteFile(tgt->parent, tgt->name);
     return 0;
 }
 
@@ -381,7 +382,22 @@ int moveDir(Dir *tgt, Dir *dest)
 const File **filesOfTag(const Dir *dir, Tag tag, unsigned int &length)
 {
     length = 0;
-    const File **files;
-    fileHelper(dir, tag, length, &files);
+    const File **files = (const File **)malloc(sizeof(File) * 10);
+
+    // fileHelper(dir, tag, length, &files);
+
+    const File *dirFiles = dir->subfile;
+    while (dirFiles)
+    {
+        if (dirFiles->tag == tag)
+        {
+            files[length] = dirFiles;
+            length++;
+        }
+        dirFiles = dirFiles->next;
+    }
+    delete (dirFiles);
+    dirFiles = nullptr;
+
     return files;
 }

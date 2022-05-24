@@ -22,7 +22,7 @@ const char PARAM_NULL[] = "Error: NULL pointer passed as parameter!";
 void startCLI(Dir *wd)
 {
     cout << endl
-         << "COMP2011 (2022 Spring) PA3 CLI" << endl
+         << "Votex CLI 1.0.0\t @Abhishek Srivastava" << endl
          << endl;
     bool exit = false;
     do
@@ -245,8 +245,8 @@ Dir *execute(Dir *wd, char *rest, bool &exit)
         char dest[MAX_CMD_LEN] = "";
         fetch(rest, dest);
 
-        cout << tgt << dest << "\n";
         // int code = moveDir(tgt, dest);
+
         // switch (code)
         // {
         // case -1:
@@ -256,10 +256,10 @@ Dir *execute(Dir *wd, char *rest, bool &exit)
         //     cout << PARAM_NULL << endl;
         //     break;
         // case 2:
-        //     cout << "Error: File name \"" << dirname << "\" is illegal!" << endl;
+        //     cout << "Error: File name \"" << tgt << "\" is illegal!" << endl;
         //     break;
         // case 3:
-        //     cout << "Error: File \"" << dirname << "\" already exists!" << endl;
+        //     cout << "Error: File \"" << tgt << "\" already exists!" << endl;
         //     break;
         // }
         /**
